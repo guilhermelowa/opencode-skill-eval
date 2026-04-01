@@ -1,6 +1,10 @@
 # opencode-skill-eval
 
+> **Disclaimer:** This is a vibe-coded repo, built by copying and adapting open-source [Anthropic's skill-creator](https://github.com/anthropics/skills/tree/main/skills/skill-creator) (not leaked).
+
 A CLI tool to create, test, and evaluate **Agent Skills** for OpenCode. Skills are `SKILL.md` files with frontmatter and step-by-step instructions that extend an AI agent's capabilities. This tool measures whether a skill actually improves the agent's output quality compared to running without it.
+
+> **Note:** While this is a CLI tool, it is designed to be used **inside OpenCode's agent**. The agent invokes these commands to run evaluations, grade outputs, and generate benchmarks — you don't typically run them manually from your terminal.
 
 ## Installation
 
@@ -341,6 +345,10 @@ npm run build        # Compile TypeScript
 npm run dev          # Watch mode
 npm run typecheck    # Type check without emitting
 ```
+
+## TODO
+
+- Token counts are not correct yet and will be worked on soon
 
 ## License
 
