@@ -1,0 +1,6 @@
+[
+  {"query": "Example prompt that should trigger this skill", "should_trigger": true},
+  {"query": "Another prompt requiring the skill", "should_trigger": true},
+  {"query": "A prompt that looks related but needs a different tool", "should_trigger": false},
+  {"query": "An unrelated request", "should_trigger": false}
+]

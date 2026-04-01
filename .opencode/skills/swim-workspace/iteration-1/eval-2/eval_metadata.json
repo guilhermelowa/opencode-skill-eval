@@ -1,0 +1,10 @@
+{
+  "eval_id": 2,
+  "eval_name": "eval-2",
+  "prompt": "Log my swim for today",
+  "assertions": [
+    "~/swim.txt file exists and contains at least one line",
+    "The appended line matches the format 'Swam <N> km' where N is a number",
+    "The number N is between 1 and 100"
+  ]
+}

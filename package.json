@@ -1,0 +1,33 @@
+{
+  "name": "opencode-skill-eval",
+  "version": "0.1.0",
+  "description": "Create, test, and evaluate Agent Skills for OpenCode",
+  "type": "module",
+  "bin": {
+    "opencode-skill-eval": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "postinstall": "node ./scripts/install-skill.js || true"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "p-limit": "^6.1.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist/",
+    "skill-creator/",
+    "templates/",
+    "scripts/"
+  ]
+}

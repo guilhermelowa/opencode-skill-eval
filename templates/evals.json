@@ -1,0 +1,23 @@
+{
+  "skill_name": "my-skill",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "A realistic user prompt that should trigger this skill",
+      "expected_output": "Description of the expected result",
+      "files": [],
+      "assertions": [
+        "A verifiable assertion about the output"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Another realistic prompt testing a different capability",
+      "expected_output": "Description of expected result for this case",
+      "files": [],
+      "assertions": [
+        "A verifiable assertion for this test case"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "skill_name": "swim",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "swim",
+      "expected_output": "A line 'Swam <N> km' is appended to ~/swim.txt where N is a number between 1 and 100",
+      "files": [],
+      "assertions": [
+        "~/swim.txt file exists and contains at least one line",
+        "The appended line matches the format 'Swam <N> km' where N is a number",
+        "The number N is between 1 and 100"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Log my swim for today",
+      "expected_output": "A line 'Swam <N> km' is appended to ~/swim.txt where N is a number between 1 and 100",
+      "files": [],
+      "assertions": [
+        "~/swim.txt file exists and contains at least one line",
+        "The appended line matches the format 'Swam <N> km' where N is a number",
+        "The number N is between 1 and 100"
+      ]
+    }
+  ]
+}
