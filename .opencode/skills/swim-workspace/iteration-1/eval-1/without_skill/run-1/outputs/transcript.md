@@ -1,1 +1,0 @@
-Swam today! Distance logged.
