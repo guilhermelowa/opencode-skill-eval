@@ -13,6 +13,35 @@ export interface RunResult {
   stderr: string
   exitCode: number
   durationMs: number
+  totalTokens?: number
+  transcriptText?: string
+}
+
+interface ParsedEvents {
+  transcriptText: string
+  totalTokens: number
+}
+
+function parseJsonEvents(stdout: string): ParsedEvents {
+  const textParts: string[] = []
+  let totalTokens = 0
+
+  for (const line of stdout.split("\n")) {
+    if (!line.trim()) continue
+    try {
+      const evt = JSON.parse(line)
+      if (evt.type === "text" && evt.part?.text) {
+        textParts.push(evt.part.text)
+      }
+      if (evt.type === "step_finish" && evt.part?.tokens?.total) {
+        totalTokens += evt.part.tokens.total
+      }
+    } catch {
+      // Skip non-JSON lines
+    }
+  }
+
+  return { transcriptText: textParts.join(""), totalTokens }
 }
 
 export async function run(args: string[], opts: RunOptions = {}): Promise<RunResult> {
@@ -66,9 +95,14 @@ export async function runPrompt(
     timeout?: number
     outputDir?: string
     disableExternalSkills?: boolean
+    skillPath?: string
   } = {},
 ): Promise<RunResult> {
-  const args = ["run"]
+  const args = ["run", "--format", "json"]
+
+  if (opts.cwd) {
+    args.push("--dir", opts.cwd)
+  }
 
   if (opts.model) {
     args.push("--model", opts.model)
@@ -87,9 +121,13 @@ export async function runPrompt(
     env: Object.keys(env).length > 0 ? env : undefined,
   })
 
+  const parsed = parseJsonEvents(result.stdout)
+  result.totalTokens = parsed.totalTokens || undefined
+  result.transcriptText = parsed.transcriptText || result.stdout
+
   if (opts.outputDir) {
     await mkdir(opts.outputDir, { recursive: true })
-    await writeFile(path.join(opts.outputDir, "transcript.md"), result.stdout)
+    await writeFile(path.join(opts.outputDir, "transcript.md"), result.transcriptText)
   }
 
   return result

@@ -1,6 +1,6 @@
 import path from "path"
 import os from "os"
-import { cp, mkdir, rm } from "fs/promises"
+import { cp, mkdir, rm, writeFile } from "fs/promises"
 import pLimit from "p-limit"
 import { type EvalItem, type EvalMetadata, type TimingData } from "./types.js"
 import { runPrompt } from "../utils/subprocess.js"
@@ -37,11 +37,19 @@ export async function runEval(opts: RunEvalOptions): Promise<RunResult[]> {
     oldSnapshot = await snapshotSkill(opts.oldSkillPath, opts.workspace)
   }
 
-  // Create a clean temp workspace for all runs
-  const tempWorkspace = await mkdir(
-    path.join(os.tmpdir(), `opencode-eval-${Date.now()}`),
+  // Create separate temp workspaces for with_skill and baseline runs
+  const withSkillWorkspace = await mkdir(
+    path.join(os.tmpdir(), `opencode-eval-with-${Date.now()}`),
     { recursive: true },
   ) as string
+  const baselineWorkspace = await mkdir(
+    path.join(os.tmpdir(), `opencode-eval-baseline-${Date.now()}`),
+    { recursive: true },
+  ) as string
+
+  // Clear ~/swim.txt before running evals to ensure clean state
+  const swimFile = path.join(os.homedir(), "swim.txt")
+  await writeFile(swimFile, "")
 
   try {
     for (const ev of opts.evals) {
@@ -71,17 +79,17 @@ export async function runEval(opts: RunEvalOptions): Promise<RunResult[]> {
         }
       }
 
-      // with_skill run: place skill in temp workspace
+      // with_skill run: place skill in with_skill workspace
       const skillName = path.basename(opts.skillPath)
-      const skillInTemp = path.join(tempWorkspace, ".opencode", "skill", skillName)
-      await cp(opts.skillPath, skillInTemp, { recursive: true })
+      const skillInWithWorkspace = path.join(withSkillWorkspace, ".opencode", "skill", skillName)
+      await cp(opts.skillPath, skillInWithWorkspace, { recursive: true })
 
       const withDir = path.join(metaDir, "with_skill", "run-1")
       tasks.push(
         limit(async () => {
           const result = await runPrompt(ev.prompt, {
             model: opts.model,
-            cwd: tempWorkspace,
+            cwd: withSkillWorkspace,
             disableExternalSkills: true,
             timeout: opts.timeout,
             outputDir: path.join(withDir, "outputs"),
@@ -89,11 +97,12 @@ export async function runEval(opts: RunEvalOptions): Promise<RunResult[]> {
           const timing: TimingData = {
             duration_ms: result.durationMs,
             total_duration_seconds: result.durationMs / 1000,
+            total_tokens: result.totalTokens,
           }
           await writeJson(path.join(withDir, "timing.json"), timing)
 
           // Copy any files created by the skill into outputs
-          await collectOutputFiles(tempWorkspace, path.join(withDir, "outputs"))
+          await collectOutputFiles(withSkillWorkspace, path.join(withDir, "outputs"))
 
           return { evalId: ev.id, config: "with_skill", outputDir: withDir, timing }
         }),
@@ -104,24 +113,17 @@ export async function runEval(opts: RunEvalOptions): Promise<RunResult[]> {
         const baselineConfig = opts.baselineMode
         const baselineDir = path.join(metaDir, baselineConfig, "run-1")
 
-        // For without_skill: remove skill from temp workspace
-        // For old_skill: replace skill in temp workspace
-        if (baselineConfig === "without_skill") {
-          await rm(skillInTemp, { recursive: true, force: true })
-        } else if (baselineConfig === "old_skill" && oldSnapshot) {
-          await rm(skillInTemp, { recursive: true, force: true })
-          await cp(oldSnapshot, skillInTemp, { recursive: true })
+        // For old_skill: place old skill in baseline workspace
+        if (baselineConfig === "old_skill" && oldSnapshot) {
+          const skillInBaselineWorkspace = path.join(baselineWorkspace, ".opencode", "skill", skillName)
+          await cp(oldSnapshot, skillInBaselineWorkspace, { recursive: true })
         }
-
-        const baselineCwd = baselineConfig === "without_skill"
-          ? tempWorkspace
-          : tempWorkspace
 
         tasks.push(
           limit(async () => {
             const result = await runPrompt(ev.prompt, {
               model: opts.model,
-              cwd: baselineCwd,
+              cwd: baselineWorkspace,
               disableExternalSkills: true,
               timeout: opts.timeout,
               outputDir: path.join(baselineDir, "outputs"),
@@ -129,6 +131,7 @@ export async function runEval(opts: RunEvalOptions): Promise<RunResult[]> {
             const timing: TimingData = {
               duration_ms: result.durationMs,
               total_duration_seconds: result.durationMs / 1000,
+              total_tokens: result.totalTokens,
             }
             await writeJson(path.join(baselineDir, "timing.json"), timing)
 
@@ -140,8 +143,9 @@ export async function runEval(opts: RunEvalOptions): Promise<RunResult[]> {
 
     return await Promise.all(tasks)
   } finally {
-    // Clean up temp workspace
-    await rm(tempWorkspace, { recursive: true, force: true })
+    // Clean up temp workspaces
+    await rm(withSkillWorkspace, { recursive: true, force: true })
+    await rm(baselineWorkspace, { recursive: true, force: true })
   }
 }
 

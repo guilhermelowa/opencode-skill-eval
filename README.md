@@ -40,6 +40,8 @@ opencode-skill-eval benchmark path/to/my-skill-workspace/iteration-1
 
 The `benchmark` and `run-all` commands automatically generate an HTML viewer and open it in your browser. Use `--no-view` to suppress this.
 
+> **Note:** The auto-open functionality is currently broken. After running evaluation, open the HTML manually at `<workspace>/iteration-N/review.html`.
+
 ## How It Works
 
 The evaluation loop runs each test case twice:
